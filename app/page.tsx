@@ -10,80 +10,87 @@ import { PotreeViewer } from "@/components/potree-viewer"
 import { Activity, Users, Wifi, Database, Clock, Box } from "lucide-react"
 
 type Sensor = {
-  id: string,
-  status: string,
-  detections: number,
+  id: string
+  status: string
+  detections: number
   battery: number
 }
 
 export default function DashboardPage() {
-  const [isConnected, setConnected] = useState(false);
-  const [sensorIds, setSensorIds] = useState<string[]>([]);
-  const [sensors, setSensors] = useState<Sensor[]>([]);
-  const [totalRegisters, setTotalRegisters] = useState<number>(0);
-  const [lastDetected, setLastDetected] = useState<number>(0);
-  const [lastDetectedSensor, setLastDetectedSensor] = useState<string>("");
-  const [totalDetected, setTotalDetected] = useState<number>(0);
+  const [isConnected, setConnected] = useState(false)
+  const [sensorIds, setSensorIds] = useState<string[]>([])
+  const [sensors, setSensors] = useState<Sensor[]>([])
+  const [totalRegisters, setTotalRegisters] = useState<number>(0)
+  const [lastDetected, setLastDetected] = useState<number>(0)
+  const [lastDetectedSensor, setLastDetectedSensor] = useState<string>("")
+  const [totalDetected, setTotalDetected] = useState<number>(0)
   const [activeTab, setActiveTab] = useState("dashboard")
-  const [data, setData] = useState<any[]>([]);
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [data, setData] = useState<any[]>([])
+  const [ws, setWs] = useState<WebSocket | null>(null)
 
   useEffect(() => {
     // Connect to WebSocket
-    const websocket = new WebSocket('wss://iotws.sandbox.portillonino.dev');
-    
+    const websocket = new WebSocket("wss://iotws.sandbox.portillonino.dev")
+
     websocket.onopen = () => {
-      setConnected(true);
-      console.log('WebSocket Connected');
-    };
+      setConnected(true)
+      console.log("WebSocket Connected")
+    }
 
     websocket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      console.log('Received:', message);
+      const message = JSON.parse(event.data)
+      console.log("Received:", message)
 
-      setLastDetectedSensor(message.data.y);
-      setLastDetected(Number(message.data.x));
-      if(sensorIds.includes(message.data.y)){
-        const sensorIndex = sensors.findIndex(item => item.id === message.data.y);
-        if(sensorIndex > -1) {
-          sensors[sensorIndex] = { id: message.data.y, status: 'online', detections: Number(message.data.x), battery: 100 };
+      setLastDetectedSensor(message.data.y)
+      setLastDetected(Number(message.data.x))
+      if (sensorIds.includes(message.data.y)) {
+        const sensorIndex = sensors.findIndex((item) => item.id === message.data.y)
+        if (sensorIndex > -1) {
+          sensors[sensorIndex] = {
+            id: message.data.y,
+            status: "online",
+            detections: Number(message.data.x),
+            battery: 100,
+          }
         }
-      }
-      else {
-        sensorIds.push(message.data.y);
-        const newSensor: Sensor = { id: message.data.y, status: 'online', detections: Number(message.data.x), battery: 100 };
-        sensors.push(newSensor);
+      } else {
+        sensorIds.push(message.data.y)
+        const newSensor: Sensor = {
+          id: message.data.y,
+          status: "online",
+          detections: Number(message.data.x),
+          battery: 100,
+        }
+        sensors.push(newSensor)
       }
 
-      let detected = 0;
-      sensors.map(sensor => {
-        detected += sensor.detections;
-      });
-      setTotalDetected(detected);
+      let detected = 0
+      sensors.map((sensor) => {
+        detected += sensor.detections
+      })
+      setTotalDetected(detected)
 
-      if (message.type === 'INSERT') {
-        setData(prev => [...prev, message.data]);
-      } else if (message.type === 'MODIFY') {
-        setData(prev => prev.map(item => 
-          item.id === message.data.id ? message.data : item
-        ));
+      if (message.type === "INSERT") {
+        setData((prev) => [...prev, message.data])
+      } else if (message.type === "MODIFY") {
+        setData((prev) => prev.map((item) => (item.id === message.data.id ? message.data : item)))
       }
-    };
+    }
 
     websocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+      console.error("WebSocket error:", error)
+    }
 
     websocket.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
+      console.log("WebSocket disconnected")
+    }
 
-    setWs(websocket);
+    setWs(websocket)
 
     return () => {
-      websocket.close();
-    };
-  }, []);
+      websocket.close()
+    }
+  }, [])
 
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: Activity },
@@ -91,7 +98,7 @@ export default function DashboardPage() {
     { id: "historial", label: "Historial", icon: Clock },
     { id: "potree", label: "Potree 3D", icon: Box },
   ]
-/*
+  /*
   const mockSensors = [
     { id: "E01", status: "online", detections: 125, battery: 87 },
     { id: "E02", status: "online", detections: 98, battery: 92 },
@@ -102,33 +109,33 @@ export default function DashboardPage() {
     <div className="min-h-screen text-white dark:text-gray-100 flex relative overflow-hidden">
       {/* MODO CLARO - Fondo con tonos verdes/teal/cyan */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-emerald-950/30 to-slate-950 dark:from-gray-950 dark:via-gray-900 dark:to-black"></div>
-      
+
       {/* Segunda capa de degradado */}
       <div className="fixed inset-0 bg-gradient-to-tr from-cyan-950/40 via-transparent to-teal-950/30 dark:from-gray-900/60 dark:via-transparent dark:to-gray-950/50"></div>
-      
+
       {/* Tercera capa con variaciones */}
       <div className="fixed inset-0 bg-gradient-to-bl from-transparent via-slate-900/50 to-emerald-950/40 dark:from-transparent dark:via-gray-950/40 dark:to-gray-900/60"></div>
-      
+
       {/* Puntos de luz - MODO CLARO (verde) / MODO OSCURO (gris) */}
       <div className="fixed top-0 left-1/4 w-96 h-96 bg-emerald-500/10 dark:bg-gray-700/15 rounded-full blur-3xl"></div>
       <div className="fixed top-1/4 right-0 w-80 h-80 bg-teal-500/15 dark:bg-gray-600/20 rounded-full blur-3xl"></div>
       <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-cyan-500/10 dark:bg-gray-700/12 rounded-full blur-3xl"></div>
       <div className="fixed bottom-1/4 right-1/4 w-72 h-72 bg-emerald-600/12 dark:bg-gray-600/18 rounded-full blur-3xl"></div>
       <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-400/8 dark:bg-gray-500/10 rounded-full blur-3xl"></div>
-      
+
       {/* Puntos más oscuros para contraste */}
       <div className="fixed top-1/3 right-1/3 w-64 h-64 bg-slate-950/80 dark:bg-black/90 rounded-full blur-2xl"></div>
       <div className="fixed bottom-1/3 left-1/3 w-72 h-72 bg-slate-950/70 dark:bg-black/80 rounded-full blur-2xl"></div>
-      
+
       {/* Puntos de luz más intensos */}
       <div className="fixed top-20 right-1/3 w-40 h-40 bg-emerald-400/20 dark:bg-gray-500/25 rounded-full blur-2xl"></div>
       <div className="fixed bottom-20 left-1/4 w-48 h-48 bg-cyan-400/18 dark:bg-gray-600/22 rounded-full blur-2xl"></div>
-      
+
       {/* Sidebar Navigation */}
       <aside className="relative w-72 border-r border-slate-800/50 dark:border-gray-800/60 p-6 flex flex-col z-10">
         {/* Fondo del sidebar con blur */}
         <div className="absolute inset-0 bg-slate-950/60 dark:bg-gray-950/80 backdrop-blur-xl"></div>
-        
+
         <div className="relative z-10">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-8">
@@ -167,7 +174,11 @@ export default function DashboardPage() {
                   >
                     <Icon className="w-5 h-5" />
                   </div>
-                  <span className={`font-medium ${isActive ? "text-white dark:text-gray-200" : "text-slate-400 dark:text-gray-500"}`}>{item.label}</span>
+                  <span
+                    className={`font-medium ${isActive ? "text-white dark:text-gray-200" : "text-slate-400 dark:text-gray-500"}`}
+                  >
+                    {item.label}
+                  </span>
                 </button>
               )
             })}
@@ -211,7 +222,8 @@ export default function DashboardPage() {
                     Movimiento Detectado
                   </h3>
                   <p className="text-slate-300 dark:text-gray-400 mt-1">
-                    Hay <span className="font-bold text-2xl text-white dark:text-gray-200">{totalDetected}</span> personas en el salón en este momento.
+                    Hay <span className="font-bold text-2xl text-white dark:text-gray-200">{totalDetected}</span>{" "}
+                    personas en el salón en este momento.
                   </p>
                 </div>
               </div>
@@ -229,7 +241,7 @@ export default function DashboardPage() {
               <GradientCard
                 icon={<Activity className="w-5 h-5" />}
                 title="Detección de Movimiento"
-                value={isConnected?"Activo":"Inactivo"}
+                value={isConnected ? "Activo" : "Inactivo"}
                 subtitle="Movimiento detectado"
               />
 
@@ -237,7 +249,7 @@ export default function DashboardPage() {
                 icon={<Wifi className="w-5 h-5" />}
                 title="Sensor ID"
                 value={lastDetectedSensor}
-                subtitle={lastDetectedSensor ? "En línea": ""}
+                subtitle={lastDetectedSensor ? "En línea" : ""}
                 showPulse
               />
 
@@ -288,7 +300,9 @@ export default function DashboardPage() {
                       </div>
                       <div
                         className={`relative px-3 py-1 rounded-lg overflow-hidden ${
-                          sensor.status === "online" ? "border border-emerald-500/50 dark:border-gray-500/50" : "border border-slate-600/50 dark:border-gray-700/50"
+                          sensor.status === "online"
+                            ? "border border-emerald-500/50 dark:border-gray-500/50"
+                            : "border border-slate-600/50 dark:border-gray-700/50"
                         }`}
                       >
                         {sensor.status === "online" && (
@@ -307,7 +321,9 @@ export default function DashboardPage() {
                           ></div>
                           <span
                             className={`text-xs font-medium ${
-                              sensor.status === "online" ? "text-emerald-300 dark:text-gray-300" : "text-slate-400 dark:text-gray-600"
+                              sensor.status === "online"
+                                ? "text-emerald-300 dark:text-gray-300"
+                                : "text-slate-400 dark:text-gray-600"
                             }`}
                           >
                             {sensor.status === "online" ? "En línea" : "Desconectado"}
@@ -357,39 +373,6 @@ export default function DashboardPage() {
             </div>
 
             <OccupancyChart />
-
-            <div className="mt-6 p-6 rounded-2xl bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-900/50 dark:from-gray-900/60 dark:via-gray-800/40 dark:to-gray-950/70 border border-slate-700/50 dark:border-gray-700/50 backdrop-blur-xl shadow-xl">
-              <h3 className="text-lg font-bold mb-4">Últimas Detecciones</h3>
-              <div className="space-y-3">
-                {[
-                  { time: "14:35", sensor: "E01", people: 2 },
-                  { time: "14:20", sensor: "E01", people: 3 },
-                  { time: "14:05", sensor: "E02", people: 1 },
-                  { time: "13:50", sensor: "E01", people: 2 },
-                  { time: "13:30", sensor: "E01", people: 4 },
-                ].map((log, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-4 rounded-xl bg-slate-800/50 dark:bg-gray-800/50 border border-slate-700/50 dark:border-gray-700/50 hover:border-emerald-500/30 dark:hover:border-gray-600/40 transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-cyan-600/20 dark:from-gray-600/20 dark:via-gray-500/15 dark:to-gray-700/20 border border-emerald-500/30 dark:border-gray-600/30 flex items-center justify-center">
-                        <Clock className="w-5 h-5 text-emerald-400 dark:text-gray-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-white dark:text-gray-200">{log.time}</p>
-                        <p className="text-sm text-slate-400 dark:text-gray-500">Sensor {log.sensor}</p>
-                      </div>
-                    </div>
-                    <div className="relative px-4 py-2 rounded-lg overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 dark:from-gray-600/20 dark:to-gray-500/20"></div>
-                      <div className="absolute inset-0 rounded-lg border border-emerald-500/50 dark:border-gray-600/50"></div>
-                      <span className="relative text-sm font-medium text-emerald-300 dark:text-gray-300">{log.people} personas</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
