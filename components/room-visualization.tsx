@@ -50,7 +50,7 @@ export function RoomVisualization() {
   }
 
   return (
-    <div className="relative p-6 rounded-2xl overflow-hidden">
+    <div className="relative p-4 md:p-6 rounded-2xl overflow-hidden">
       {/* Fondo principal con degradado elegante de tonos variados */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-emerald-950/60 to-slate-950"></div>
 
@@ -74,15 +74,15 @@ export function RoomVisualization() {
       {/* Contenido */}
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/50">
             <MapPin className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
+            <h3 className="text-base md:text-lg font-bold bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
               Vista del Salón
             </h3>
-            <p className="text-sm text-slate-400">Posiciones detectadas en tiempo real</p>
+            <p className="text-xs md:text-sm text-slate-400">Posiciones detectadas en tiempo real</p>
           </div>
           <div className="relative px-3 py-1 rounded-lg overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-cyan-500/20"></div>
@@ -96,7 +96,7 @@ export function RoomVisualization() {
         </div>
 
         {/* Mapa del salón */}
-        <div className="relative h-80 rounded-xl overflow-hidden">
+        <div className="relative h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden">
           {/* Fondo principal con degradado tipo mapa - tonos variados */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-emerald-950/40 to-slate-950/95"></div>
 
@@ -231,7 +231,7 @@ export function RoomVisualization() {
         </div>
 
         {/* Información adicional debajo del mapa */}
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="mt-4 grid grid-cols-3 gap-2 md:gap-3">
           <div className="relative px-3 py-2 rounded-lg overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 backdrop-blur-sm"></div>
             <div className="absolute inset-0 rounded-lg border border-emerald-500/30"></div>

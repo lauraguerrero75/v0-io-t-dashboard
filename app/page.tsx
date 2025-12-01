@@ -7,7 +7,7 @@ import { GradientCard } from "@/components/gradient-card"
 import { OccupancyChart } from "@/components/occupancy-chart"
 import { RoomVisualization } from "@/components/room-visualization"
 import { PotreeViewer } from "@/components/potree-viewer"
-import { Activity, Users, Wifi, Database, Clock, Box } from "lucide-react"
+import { Activity, Users, Wifi, Database, Clock, Box, Menu, X } from "lucide-react"
 
 type Sensor = {
   id: string
@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [data, setData] = useState<any[]>([])
   const [ws, setWs] = useState<WebSocket | null>(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     // Connect to WebSocket
@@ -38,42 +39,70 @@ export default function DashboardPage() {
     }
 
     websocket.onmessage = (event) => {
-      const message = JSON.parse(event.data)
-      console.log("Received:", message)
+      try {
+        const message = JSON.parse(event.data)
+        console.log("Received:", message)
 
-      setLastDetectedSensor(message.data.y)
-      setLastDetected(Number(message.data.x))
-      if (sensorIds.includes(message.data.y)) {
-        const sensorIndex = sensors.findIndex((item) => item.id === message.data.y)
-        if (sensorIndex > -1) {
-          sensors[sensorIndex] = {
-            id: message.data.y,
-            status: "online",
-            detections: Number(message.data.x),
-            battery: 100,
+        const xValue = Number(message.data?.x ?? 0)
+        const yId = String(message.data?.y ?? "unknown")
+
+        setLastDetectedSensor(yId)
+        setLastDetected(xValue)
+
+        // Update sensors immutably
+        setSensors((prevSensors) => {
+          const idx = prevSensors.findIndex((s) => s.id === yId)
+          if (idx > -1) {
+            const updated = [...prevSensors]
+            updated[idx] = {
+              ...updated[idx],
+              status: "online",
+              detections: xValue,
+              battery: updated[idx].battery ?? 100,
+            }
+            return updated
+          } else {
+            return [
+              ...prevSensors,
+              {
+                id: yId,
+                status: "online",
+                detections: xValue,
+                battery: 100,
+              },
+            ]
           }
-        }
-      } else {
-        sensorIds.push(message.data.y)
-        const newSensor: Sensor = {
-          id: message.data.y,
-          status: "online",
-          detections: Number(message.data.x),
-          battery: 100,
-        }
-        sensors.push(newSensor)
-      }
+        })
 
-      let detected = 0
-      sensors.map((sensor) => {
-        detected += sensor.detections
-      })
-      setTotalDetected(detected)
+        // Keep sensorIds in sync
+        setSensorIds((prev) => {
+          if (!prev.includes(yId)) return [...prev, yId]
+          return prev
+        })
 
-      if (message.type === "INSERT") {
-        setData((prev) => [...prev, message.data])
-      } else if (message.type === "MODIFY") {
-        setData((prev) => prev.map((item) => (item.id === message.data.id ? message.data : item)))
+        // Recompute totalDetected after sensors update (use a functional update)
+        setSensors((prev) => {
+          // compute total based on what will be the new sensors array
+          let candidateSensors = prev
+          const idx = prev.findIndex((s) => s.id === yId)
+          if (idx > -1) {
+            candidateSensors = prev.map((s, i) => (i === idx ? { ...s, detections: xValue } : s))
+          } else {
+            candidateSensors = [...prev, { id: yId, status: "online", detections: xValue, battery: 100 }]
+          }
+          const detected = candidateSensors.reduce((acc, s) => acc + (Number(s.detections) || 0), 0)
+          setTotalDetected(detected)
+          return candidateSensors
+        })
+
+        // Update data array depending on message type
+        if (message.type === "INSERT") {
+          setData((prev) => [...prev, message.data])
+        } else if (message.type === "MODIFY") {
+          setData((prev) => prev.map((item) => (item.id === message.data.id ? message.data : item)))
+        }
+      } catch (err) {
+        console.error("Error parsing websocket message:", err)
       }
     }
 
@@ -83,6 +112,7 @@ export default function DashboardPage() {
 
     websocket.onclose = () => {
       console.log("WebSocket disconnected")
+      setConnected(false)
     }
 
     setWs(websocket)
@@ -98,13 +128,7 @@ export default function DashboardPage() {
     { id: "historial", label: "Historial", icon: Clock },
     { id: "potree", label: "Potree 3D", icon: Box },
   ]
-  /*
-  const mockSensors = [
-    { id: "E01", status: "online", detections: 125, battery: 87 },
-    { id: "E02", status: "online", detections: 98, battery: 92 },
-    { id: "E03", status: "offline", detections: 0, battery: 15 },
-  ]
-*/
+
   return (
     <div className="min-h-screen text-white dark:text-gray-100 flex relative overflow-hidden">
       {/* MODO CLARO - Fondo con tonos verdes/teal/cyan */}
@@ -114,7 +138,7 @@ export default function DashboardPage() {
       <div className="fixed inset-0 bg-gradient-to-tr from-cyan-950/40 via-transparent to-teal-950/30 dark:from-gray-900/60 dark:via-transparent dark:to-gray-950/50"></div>
 
       {/* Tercera capa con variaciones */}
-      <div className="fixed inset-0 bg-gradient-to-bl from-transparent via-slate-900/50 to-emerald-950/40 dark:from-transparent dark:via-gray-950/40 dark:to-gray-900/60"></div>
+      <div className="fixed inset-0 bg-gradient-to-bl from-transparent via-slate-900/50 to-emerald-950/40 dark:from-transparent dark:via-gray-950/40 dark:to-gray-950/60"></div>
 
       {/* Puntos de luz - MODO CLARO (verde) / MODO OSCURO (gris) */}
       <div className="fixed top-0 left-1/4 w-96 h-96 bg-emerald-500/10 dark:bg-gray-700/15 rounded-full blur-3xl"></div>
@@ -131,8 +155,25 @@ export default function DashboardPage() {
       <div className="fixed top-20 right-1/3 w-40 h-40 bg-emerald-400/20 dark:bg-gray-500/25 rounded-full blur-2xl"></div>
       <div className="fixed bottom-20 left-1/4 w-48 h-48 bg-cyan-400/18 dark:bg-gray-600/22 rounded-full blur-2xl"></div>
 
-      {/* Sidebar Navigation */}
-      <aside className="relative w-72 border-r border-slate-800/50 dark:border-gray-800/60 p-6 flex flex-col z-10">
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className="fixed top-4 left-4 z-50 lg:hidden w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 dark:from-gray-600 dark:via-gray-500 dark:to-gray-700 flex items-center justify-center shadow-lg"
+      >
+        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </button>
+
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed lg:relative w-72 h-full border-r border-slate-800/50 dark:border-gray-800/60 p-6 flex flex-col z-40 transition-transform duration-300 ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
+      >
         {/* Fondo del sidebar con blur */}
         <div className="absolute inset-0 bg-slate-950/60 dark:bg-gray-950/80 backdrop-blur-xl"></div>
 
@@ -158,7 +199,10 @@ export default function DashboardPage() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    setActiveTab(item.id)
+                    setMobileMenuOpen(false)
+                  }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                     isActive
                       ? "bg-gradient-to-r from-emerald-500/20 via-teal-600/15 to-cyan-600/20 dark:from-gray-700/40 dark:via-gray-600/30 dark:to-gray-700/40 border border-emerald-500/50 dark:border-gray-600/50 shadow-lg shadow-emerald-500/20 dark:shadow-gray-700/30"
@@ -196,9 +240,8 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main Content */}
-      <div className="relative flex-1 p-8 overflow-y-auto z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+      <div className="relative flex-1 p-4 md:p-8 overflow-y-auto z-10 pt-20 lg:pt-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <SystemInfo />
           <ThemeToggle />
         </div>
@@ -229,8 +272,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Main Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
               <GradientCard
                 icon={<Users className="w-5 h-5" />}
                 title="Personas Detectadas"
@@ -261,8 +303,7 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
               <OccupancyChart />
               <RoomVisualization />
             </div>
@@ -273,16 +314,16 @@ export default function DashboardPage() {
         {activeTab === "sensores" && (
           <div>
             <div className="mb-8">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 dark:from-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 dark:from-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
                 Sensores
               </h1>
               <p className="text-slate-400 dark:text-gray-500 mt-1">Estado y configuración de sensores IoT</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {sensors.map((sensor) => (
                 <div key={sensor.id} className="relative p-6 rounded-2xl overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/50 via-cyan-900/40 to-slate-950/70 dark:from-gray-900/60 dark:via-gray-800/50 dark:to-gray-950/80"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/50 via-cyan-900/40 to-slate-950/70 dark:from-gray-950/60 dark:via-gray-800/50 dark:to-gray-950/80"></div>
                   <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/25 dark:bg-gray-600/30 rounded-full blur-3xl group-hover:bg-emerald-500/35 dark:group-hover:bg-gray-600/40 transition-all duration-500"></div>
                   <div className="absolute bottom-0 left-0 w-20 h-20 bg-cyan-500/20 dark:bg-gray-600/25 rounded-full blur-3xl group-hover:bg-cyan-500/30 dark:group-hover:bg-gray-600/35 transition-all duration-500"></div>
                   <div className="absolute inset-0 rounded-2xl border border-slate-700/50 dark:border-gray-700/50 group-hover:border-emerald-500/50 dark:group-hover:border-gray-600/50 transition-all duration-300"></div>
@@ -366,7 +407,7 @@ export default function DashboardPage() {
         {activeTab === "historial" && (
           <div>
             <div className="mb-8">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 dark:from-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 dark:from-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
                 Historial
               </h1>
               <p className="text-slate-400 dark:text-gray-500 mt-1">Registro de actividad y detecciones</p>
@@ -380,7 +421,7 @@ export default function DashboardPage() {
         {activeTab === "potree" && (
           <div>
             <div className="mb-8">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 dark:from-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 dark:from-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
                 Visualización 3D
               </h1>
               <p className="text-slate-400 dark:text-gray-500 mt-1">Modelo 3D del espacio - Potree Viewer</p>

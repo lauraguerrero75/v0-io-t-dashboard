@@ -18,7 +18,7 @@ export function OccupancyChart() {
   }
 
   return (
-    <div className="relative p-6 rounded-2xl overflow-hidden">
+    <div className="relative p-4 md:p-6 rounded-2xl overflow-hidden">
       {/* Fondo con degradado verde-azul-gris */}
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/50 via-cyan-900/40 to-slate-950/70"></div>
 
@@ -38,14 +38,16 @@ export function OccupancyChart() {
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
+            <h3 className="text-base md:text-lg font-bold bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
               Historial de Ocupación
             </h3>
-            <p className="text-sm text-slate-400">Últimos {historialData.length} registros de detección de personas</p>
+            <p className="text-xs md:text-sm text-slate-400">
+              Últimos {historialData.length} registros de detección de personas
+            </p>
           </div>
         </div>
 
-        <div className="flex items-end justify-between h-48 gap-2">
+        <div className="flex items-end justify-between h-40 md:h-48 gap-1 md:gap-2">
           {historialData.map((value, index) => {
             const maxValue = Math.max(...historialData, 1)
             const height = (value / maxValue) * 100
