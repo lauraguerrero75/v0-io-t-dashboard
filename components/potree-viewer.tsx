@@ -1,8 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Box, ExternalLink } from "lucide-react"
+import { Box, ExternalLink, Maximize2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useState } from "react"
 
 export function PotreeViewer() {
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const potreeUrl = "http://ec2-100-26-182-247.compute-1.amazonaws.com:8000/comunicaciones.html" // Reemplaza con tu IP pública
+
+  const toggleFullscreen = () => {
+    const iframe = document.getElementById('potree-iframe')
+    if (!document.fullscreenElement) {
+      iframe?.requestFullscreen()
+      setIsFullscreen(true)
+    } else {
+      document.exitFullscreen()
+      setIsFullscreen(false)
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -13,27 +28,58 @@ export function PotreeViewer() {
         <CardDescription>Nube de puntos 3D del espacio</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/50">
-          <Box className="mb-4 h-16 w-16 text-muted-foreground" />
-          <h3 className="mb-2 text-lg font-semibold">Visualizador Potree</h3>
-          <p className="mb-4 max-w-md text-center text-sm text-muted-foreground">
-            Esta sección está preparada para integrar el visualizador de nube de puntos 3D Potree. Conecta tu instancia
-            de Potree aquí.
-          </p>
-          <Button variant="outline" className="gap-2 bg-transparent">
-            <ExternalLink className="h-4 w-4" />
-            Configurar Potree
-          </Button>
+        <div className="relative overflow-hidden rounded-lg border border-border bg-black">
+          {/* Controles superiores */}
+          <div className="absolute right-2 top-2 z-10 flex gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={toggleFullscreen}
+              className="gap-2"
+            >
+              <Maximize2 className="h-4 w-4" />
+              Pantalla completa
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              asChild
+            >
+              <a href={potreeUrl} target="_blank" rel="noopener noreferrer" className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                Abrir en nueva pestaña
+              </a>
+            </Button>
+          </div>
+
+          {/* Iframe de Potree */}
+          <iframe
+            id="potree-iframe"
+            src={potreeUrl}
+            className="h-[600px] w-full"
+            style={{ border: 'none' }}
+            title="Visualizador Potree 3D"
+            allow="fullscreen"
+          />
         </div>
 
-        <div className="mt-6 rounded-lg border border-border bg-muted/30 p-4">
-          <h4 className="mb-2 font-semibold">Instrucciones de Integración:</h4>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>• Sube tu nube de puntos al servidor</li>
-            <li>• Configura la URL del visualizador Potree</li>
-            <li>• Actualiza el iframe o componente en esta sección</li>
-            <li>• Las coordenadas de las detecciones pueden sincronizarse con la vista 3D</li>
-          </ul>
+        {/* Información adicional */}
+        <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
+          <h4 className="mb-2 font-semibold">Controles de navegación:</h4>
+          <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+            <div>
+              <strong>Click izquierdo + arrastrar:</strong> Rotar vista
+            </div>
+            <div>
+              <strong>Click derecho + arrastrar:</strong> Mover cámara
+            </div>
+            <div>
+              <strong>Scroll:</strong> Zoom in/out
+            </div>
+            <div>
+              <strong>Click medio + arrastrar:</strong> Pan
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
