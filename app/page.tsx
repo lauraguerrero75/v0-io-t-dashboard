@@ -235,11 +235,11 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-300 to-cyan-300 dark:from-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
-                    Movimiento Detectado
+                    Total de Detecciones
                   </h3>
                   <p className="text-slate-300 dark:text-gray-400 mt-1">
-                    Hay <span className="font-bold text-2xl text-white dark:text-gray-200">{totalDetected}</span>{" "}
-                    personas en el salón en este momento.
+                    Se han detectado personas <span className="font-bold text-2xl text-white dark:text-gray-200">{totalDetected}</span>{" "}
+                    veces.
                   </p>
                 </div>
               </div>
@@ -255,9 +255,9 @@ export default function DashboardPage() {
 
               <GradientCard
                 icon={<Activity className="w-5 h-5" />}
-                title="Detección de Movimiento"
-                value={isConnected ? "Activo" : "Inactivo"}
-                subtitle="Movimiento detectado"
+                title="Estado del Servidor"
+                value={isConnected ? "En Línea" : "Inactivo"}
+                subtitle="Conexión al Websocket Establecida"
               />
 
               <GradientCard

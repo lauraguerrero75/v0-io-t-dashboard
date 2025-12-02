@@ -5,7 +5,7 @@ import { useState } from "react"
 
 export function PotreeViewer() {
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const potreeUrl = "http://ec2-100-26-182-247.compute-1.amazonaws.com:8000/comunicaciones.html" // Reemplaza con tu IP pública
+  const potreeUrl = "http://ec2-18-207-255-232.compute-1.amazonaws.com:8001/comunicaciones.html" // Reemplaza con tu IP pública
 
   const toggleFullscreen = () => {
     const iframe = document.getElementById('potree-iframe')
