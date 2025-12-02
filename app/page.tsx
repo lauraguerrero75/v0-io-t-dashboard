@@ -15,6 +15,9 @@ type Sensor = {
   detections: number
   battery: number
 }
+type AuxSummary = {
+  detections: number
+}
 
 export default function DashboardPage() {
   const [isConnected, setConnected] = useState(false)
@@ -25,10 +28,12 @@ export default function DashboardPage() {
   const [lastDetected, setLastDetected] = useState<number>(0)
   const [lastDetectedSensor, setLastDetectedSensor] = useState<string>("")
   const [totalDetected, setTotalDetected] = useState<number>(0)
+  const [detectionsSummary, setDetectionsSummary] = useState<AuxSummary>({detections: 0})
   const [activeTab, setActiveTab] = useState("dashboard")
   const [data, setData] = useState<any[]>([])
   const [ws, setWs] = useState<WebSocket | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [history, setHistory] = useState<number[]>([])
 
   useEffect(() => {
     // Connect to WebSocket
@@ -45,18 +50,22 @@ export default function DashboardPage() {
 
       const messageData = JSON.parse(message.data.y)
       if (messageData.type === 'sensor') {
+        const detections = Number(message.data.x)
+        const auxDetections = detectionsSummary.detections + detections
+        setHistory(prev => [...prev, detections])
+        setDetectionsSummary({detections: auxDetections})
         const sensorId = messageData.id;
         setLastDetectedSensor(sensorId);
-        setLastDetected(Number(message.data.x));
+        setLastDetected(detections);
         if(sensorIds.includes(sensorId)){
           const sensorIndex = sensors.findIndex(item => item.id === sensorId);
           if(sensorIndex > -1) {
-            sensors[sensorIndex] = { id: sensorId, status: 'online', detections: Number(message.data.x), battery: 100 };
+            sensors[sensorIndex] = { id: sensorId, status: 'online', detections: detections, battery: 100 };
           }
         }
         else {
           sensorIds.push(sensorId);
-          const newSensor: Sensor = { id: sensorId, status: 'online', detections: Number(message.data.x), battery: 100 };
+          const newSensor: Sensor = { id: sensorId, status: 'online', detections: detections, battery: 100 };
           sensors.push(newSensor);
         }
   
@@ -93,7 +102,7 @@ export default function DashboardPage() {
     return () => {
       websocket.close();
     };
-  }, []);
+  }, [detectionsSummary, history]);
 
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: Activity },
@@ -238,7 +247,7 @@ export default function DashboardPage() {
                     Total de Detecciones
                   </h3>
                   <p className="text-slate-300 dark:text-gray-400 mt-1">
-                    Se han detectado personas <span className="font-bold text-2xl text-white dark:text-gray-200">{totalDetected}</span>{" "}
+                    Se han detectado personas <span className="font-bold text-2xl text-white dark:text-gray-200">{detectionsSummary.detections}</span>{" "}
                     veces.
                   </p>
                 </div>
@@ -277,7 +286,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-              <OccupancyChart />
+              <OccupancyChart history={history} />
               <img src={base64Image} alt="Base64 Image" />
               
             </div>

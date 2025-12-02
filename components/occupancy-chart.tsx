@@ -3,8 +3,13 @@
 import { TrendingUp } from "lucide-react"
 import { useSensorData } from "@/hooks/use-sensor-data"
 
-export function OccupancyChart() {
-  const { history, loading } = useSensorData()
+type OccupancyChartProps = {
+  history: number[]
+}
+
+export function OccupancyChart(props: OccupancyChartProps) {
+  const { loading } = useSensorData()
+  const {history} = props
 
   const historialData = history.length > 0 ? history : [0]
 
@@ -51,10 +56,13 @@ export function OccupancyChart() {
           {historialData.map((value, index) => {
             const maxValue = Math.max(...historialData, 1)
             const height = (value / maxValue) * 100
+            
 
             return (
-              <div key={index} className="flex-1 flex flex-col items-center justify-end group">
-                <div
+              <div key={index} className="flex-1 flex flex-col items-center justify-end group" style={{ height: `${height}%`, minHeight: "4px" }}>
+                  <span>
+                    {value}
+                  </span><div
                   className="w-full rounded-t-xl relative overflow-hidden transition-all duration-300 hover:scale-105"
                   style={{ height: `${height}%`, minHeight: "4px" }}
                 >
