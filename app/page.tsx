@@ -31,96 +31,69 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Connect to WebSocket
-    const websocket = new WebSocket("wss://iotws.sandbox.portillonino.dev")
-
+    const websocket = new WebSocket('wss://iotws.sandbox.portillonino.dev');
+    
     websocket.onopen = () => {
-      setConnected(true)
-      console.log("WebSocket Connected")
-    }
+      setConnected(true);
+      console.log('WebSocket Connected');
+    };
 
     websocket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data)
-        console.log("Received:", message)
+      const message = JSON.parse(event.data);
+      console.log('Received:', message);
 
-        const xValue = Number(message.data?.x ?? 0)
-        const yId = String(message.data?.y ?? "unknown")
-
-        setLastDetectedSensor(yId)
-        setLastDetected(xValue)
-
-        // Update sensors immutably
-        setSensors((prevSensors) => {
-          const idx = prevSensors.findIndex((s) => s.id === yId)
-          if (idx > -1) {
-            const updated = [...prevSensors]
-            updated[idx] = {
-              ...updated[idx],
-              status: "online",
-              detections: xValue,
-              battery: updated[idx].battery ?? 100,
-            }
-            return updated
-          } else {
-            return [
-              ...prevSensors,
-              {
-                id: yId,
-                status: "online",
-                detections: xValue,
-                battery: 100,
-              },
-            ]
+      const messageData = JSON.parse(message.data.y)
+      if (messageData.type === 'sensor') {
+        const sensorId = messageData.id;
+        setLastDetectedSensor(sensorId);
+        setLastDetected(Number(message.data.x));
+        if(sensorIds.includes(sensorId)){
+          const sensorIndex = sensors.findIndex(item => item.id === sensorId);
+          if(sensorIndex > -1) {
+            sensors[sensorIndex] = { id: sensorId, status: 'online', detections: Number(message.data.x), battery: 100 };
           }
-        })
-
-        // Keep sensorIds in sync
-        setSensorIds((prev) => {
-          if (!prev.includes(yId)) return [...prev, yId]
-          return prev
-        })
-
-        // Recompute totalDetected after sensors update (use a functional update)
-        setSensors((prev) => {
-          // compute total based on what will be the new sensors array
-          let candidateSensors = prev
-          const idx = prev.findIndex((s) => s.id === yId)
-          if (idx > -1) {
-            candidateSensors = prev.map((s, i) => (i === idx ? { ...s, detections: xValue } : s))
-          } else {
-            candidateSensors = [...prev, { id: yId, status: "online", detections: xValue, battery: 100 }]
-          }
-          const detected = candidateSensors.reduce((acc, s) => acc + (Number(s.detections) || 0), 0)
-          setTotalDetected(detected)
-          return candidateSensors
-        })
-
-        // Update data array depending on message type
-        if (message.type === "INSERT") {
-          setData((prev) => [...prev, message.data])
-        } else if (message.type === "MODIFY") {
-          setData((prev) => prev.map((item) => (item.id === message.data.id ? message.data : item)))
         }
-      } catch (err) {
-        console.error("Error parsing websocket message:", err)
+        else {
+          sensorIds.push(sensorId);
+          const newSensor: Sensor = { id: sensorId, status: 'online', detections: Number(message.data.x), battery: 100 };
+          sensors.push(newSensor);
+        }
+  
+        let detected = 0;
+        sensors.map(sensor => {
+          detected += sensor.detections;
+        });
+        setTotalDetected(detected);
       }
-    }
+
+      if (messageData.type === 'base64') {
+        const base64 = message.data.x;
+        console.log(base64);
+      }
+
+      if (message.type === 'INSERT') {
+        setData(prev => [...prev, message.data]);
+      } else if (message.type === 'MODIFY') {
+        setData(prev => prev.map(item => 
+          item.id === message.data.id ? message.data : item
+        ));
+      }
+    };
 
     websocket.onerror = (error) => {
-      console.error("WebSocket error:", error)
-    }
+      console.error('WebSocket error:', error);
+    };
 
     websocket.onclose = () => {
-      console.log("WebSocket disconnected")
-      setConnected(false)
-    }
+      console.log('WebSocket disconnected');
+    };
 
-    setWs(websocket)
+    setWs(websocket);
 
     return () => {
-      websocket.close()
-    }
-  }, [])
+      websocket.close();
+    };
+  }, []);
 
   const navigationItems = [
     { id: "dashboard", label: "Dashboard", icon: Activity },
