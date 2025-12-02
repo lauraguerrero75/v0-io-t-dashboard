@@ -19,6 +19,7 @@ type Sensor = {
 export default function DashboardPage() {
   const [isConnected, setConnected] = useState(false)
   const [sensorIds, setSensorIds] = useState<string[]>([])
+  const [base64Image, setBase64Image] = useState<string>("")
   const [sensors, setSensors] = useState<Sensor[]>([])
   const [totalRegisters, setTotalRegisters] = useState<number>(0)
   const [lastDetected, setLastDetected] = useState<number>(0)
@@ -67,8 +68,7 @@ export default function DashboardPage() {
       }
 
       if (messageData.type === 'base64') {
-        const base64 = message.data.x;
-        console.log(base64);
+        setBase64Image(`data:image/png;base64,${message.data.x}`);
       }
 
       if (message.type === 'INSERT') {
@@ -278,7 +278,8 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
               <OccupancyChart />
-              <RoomVisualization />
+              <img src={base64Image} alt="Base64 Image" />
+              
             </div>
           </>
         )}
